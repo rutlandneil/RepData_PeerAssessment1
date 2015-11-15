@@ -17,7 +17,8 @@ The following R packages have been used in the preparing and analysising this da
 
 ## Loading and preprocessing the data
 
-```{r message=FALSE, warning=FALSE}
+
+```r
 library(dplyr)
 library(lattice)
 library(ggplot2)
@@ -35,32 +36,37 @@ activity<-read.csv('./activity.csv', colClasses = c('numeric','Date','character'
 
 activity$date<-as.Date(activity$date)
 activity$interval<-as.factor(str_pad(activity$interval,width=4,side='left', pad='0'))
-
 ```
 
 
 
 ## What is mean total number of steps taken per day?
-```{r}
+
+```r
 #Calculate and store the number of steps taken each day
 daily_steps<-activity %>%
 group_by(date) %>%
 summarise(steps=sum(steps))
 
 hist(daily_steps$steps, breaks=20, xlab='No. of Steps')
+```
+
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png) 
+
+```r
 #Calculate the mean number of steps. Remove NAs or Mean will return NA
 mean<-mean(daily_steps$steps, na.rm=TRUE)
 #Calculate the median number of steps. Remove NAs or Mean will return NA
 median<-median(daily_steps$steps, na.rm=TRUE)
-
 ```
 
-The mean number of steps is `r mean`
+The mean number of steps is 1.0766189 &times; 10<sup>4</sup>
 
-The median number of steps is `r median`
+The median number of steps is 1.0765 &times; 10<sup>4</sup>
 
 ## What is the average daily activity pattern?
-```{r}
+
+```r
 #Calculate the average number of steps by interval. Remove NAs or Mean will return NA
 avg_steps <- activity %>%
       group_by(interval) %>%
@@ -70,29 +76,34 @@ avg_steps <- activity %>%
 plot(x=avg_steps$interval,y=avg_steps$average_steps,type='b', xlab='Time'
      ,ylab='Average No. of Steps', main='Average Steps per Interval')
 lines(avg_steps$average_steps)
+```
 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png) 
+
+```r
 #Which interval has the highest average number of steps?
 most_steps<-top_n(avg_steps,1,average_steps)
 interval<-most_steps[,1]
-
 ```
 
-The most steps are taken at `r interval`
+The most steps are taken at 0835
 
 ## Imputing missing values
-```{r}
+
+```r
 #Calculate the number of records where steps aren't recorded
 NAs<-sum(is.na(activity$steps))
 ```
 
-The total number of records where there is no observation in the data set is `r NAs`
+The total number of records where there is no observation in the data set is 2304
 
 To replace the NAs in this data set I first subset the data into a new object holding just the NA values.
 
 Then using the avg_steps data set generated earlier I fill in the average steps for the missing interval.
 
 Lastly i used row binding to join the previously NA records back into the dataset with the existing records
-```{r}
+
+```r
 #subset the rows without steps data
 no_steps<-activity[!complete.cases(activity),]
 
@@ -116,6 +127,11 @@ new_daily_steps<-new_activity %>%
       summarise(steps=sum(steps))
 
 hist(new_daily_steps$steps, breaks=20, xlab='No. of Steps')
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
+
+```r
 new_mean<-mean(new_daily_steps$steps)
 #Calculate the median number of steps. Remove NAs or Mean will return NA
 new_median<-median(new_daily_steps$steps)
@@ -123,20 +139,33 @@ new_median<-median(new_daily_steps$steps)
 
 Having filled in the NAs with the average steps per minute for each interval the new mean and meadin values are;
 
-Mean = `r new_mean`
+Mean = 1.0766189 &times; 10<sup>4</sup>
 
-Median = `r new_median`
+Median = 1.0766189 &times; 10<sup>4</sup>
 
 ## Are there differences in activity patterns between weekdays and weekends?
-```{r}
+
+```r
 new_activity$weekend<-factor(is.weekend(new_activity$date), levels=c(TRUE,FALSE),
                              labels=c('Weekend','Weekday'))
 str(new_activity)
+```
 
+```
+## 'data.frame':	17568 obs. of  4 variables:
+##  $ steps   : num  0 0 0 0 0 0 0 0 0 0 ...
+##  $ date    : Date, format: "2012-10-02" "2012-10-02" ...
+##  $ interval: Factor w/ 288 levels "0000","0005",..: 1 2 3 4 5 6 7 8 9 10 ...
+##  $ weekend : Factor w/ 2 levels "Weekend","Weekday": 2 2 2 2 2 2 2 2 2 2 ...
+```
+
+```r
 new_avg_steps <- new_activity %>%
 group_by(weekend,interval) %>%
 summarise(average_steps=mean(steps))
 
 xyplot(average_steps ~ interval | weekend, new_avg_steps, layout=c(1,2), type='l')
 ```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png) 
 

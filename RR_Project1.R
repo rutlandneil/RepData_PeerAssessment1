@@ -1,23 +1,3 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
-
-The code below explains how the data was processed in order for the analysis to take place.
-
-The following R packages have been used in the preparing and analysising this data and the library calls are included in the first code chunk below;  
-* dplyr  
-* lattice  
-* tidyr  
-* stringr  
-* chron  
-* knitr  
-
-## Loading and preprocessing the data
-
-```{r message=FALSE, warning=FALSE}
 library(dplyr)
 library(lattice)
 library(ggplot2)
@@ -26,6 +6,8 @@ library(tidyr)
 library(stringr)
 library(chron)
 library(knitr)
+
+setwd("C:/Users/The Rutlands/Google Drive/Data Scientist Specialisation/Reproducable Research/RepData_PeerAssessment1")
 
 zipLoc<-'./activity.zip'
 
@@ -36,63 +18,46 @@ activity<-read.csv('./activity.csv', colClasses = c('numeric','Date','character'
 activity$date<-as.Date(activity$date)
 activity$interval<-as.factor(str_pad(activity$interval,width=4,side='left', pad='0'))
 
-```
+summary(activity)
+str(activity)
+class(activity$date)
 
-
-
-## What is mean total number of steps taken per day?
-```{r}
 #Calculate and store the number of steps taken each day
 daily_steps<-activity %>%
 group_by(date) %>%
 summarise(steps=sum(steps))
 
-hist(daily_steps$steps, breaks=20, xlab='No. of Steps')
+daily_steps
+
+hist(daily_steps$steps, breaks=20)
 #Calculate the mean number of steps. Remove NAs or Mean will return NA
-mean<-mean(daily_steps$steps, na.rm=TRUE)
+mean(daily_steps$steps, na.rm=TRUE)
 #Calculate the median number of steps. Remove NAs or Mean will return NA
-median<-median(daily_steps$steps, na.rm=TRUE)
+median(daily_steps$steps, na.rm=TRUE)
 
-```
-
-The mean number of steps is `r mean`
-
-The median number of steps is `r median`
-
-## What is the average daily activity pattern?
-```{r}
 #Calculate the average number of steps by interval. Remove NAs or Mean will return NA
 avg_steps <- activity %>%
       group_by(interval) %>%
       summarise(average_steps=mean(steps, na.rm=TRUE))
+
+View(avg_steps)
+
+as.numeric(unique(activity$interval))
 
 #plot a time series graph of the 5 minute intervals
 plot(x=avg_steps$interval,y=avg_steps$average_steps,type='b', xlab='Time'
      ,ylab='Average No. of Steps', main='Average Steps per Interval')
 lines(avg_steps$average_steps)
 
+
 #Which interval has the highest average number of steps?
-most_steps<-top_n(avg_steps,1,average_steps)
-interval<-most_steps[,1]
+top_n(avg_steps,1,average_steps)
 
-```
-
-The most steps are taken at `r interval`
-
-## Imputing missing values
-```{r}
 #Calculate the number of records where steps aren't recorded
-NAs<-sum(is.na(activity$steps))
-```
+sum(is.na(activity$steps))
 
-The total number of records where there is no observation in the data set is `r NAs`
+plot(x=as.numeric(activity$interval_factor),y=activity$steps)
 
-To replace the NAs in this data set I first subset the data into a new object holding just the NA values.
-
-Then using the avg_steps data set generated earlier I fill in the average steps for the missing interval.
-
-Lastly i used row binding to join the previously NA records back into the dataset with the existing records
-```{r}
 #subset the rows without steps data
 no_steps<-activity[!complete.cases(activity),]
 
@@ -115,20 +80,15 @@ new_daily_steps<-new_activity %>%
       group_by(date) %>%
       summarise(steps=sum(steps))
 
-hist(new_daily_steps$steps, breaks=20, xlab='No. of Steps')
-new_mean<-mean(new_daily_steps$steps)
+hist(new_daily_steps$steps, breaks=20)
+mean(new_daily_steps$steps)
 #Calculate the median number of steps. Remove NAs or Mean will return NA
-new_median<-median(new_daily_steps$steps)
-```
+median(new_daily_steps$steps)
 
-Having filled in the NAs with the average steps per minute for each interval the new mean and meadin values are;
+write.csv(daily_steps, file='./daily_steps.csv')
+write.csv(new_daily_steps, file='./new_daily_steps.csv')
 
-Mean = `r new_mean`
 
-Median = `r new_median`
-
-## Are there differences in activity patterns between weekdays and weekends?
-```{r}
 new_activity$weekend<-factor(is.weekend(new_activity$date), levels=c(TRUE,FALSE),
                              labels=c('Weekend','Weekday'))
 str(new_activity)
@@ -137,6 +97,8 @@ new_avg_steps <- new_activity %>%
 group_by(weekend,interval) %>%
 summarise(average_steps=mean(steps))
 
-xyplot(average_steps ~ interval | weekend, new_avg_steps, layout=c(1,2), type='l')
-```
+View(new_avg_steps)
 
+xyplot(average_steps ~ interval | weekend, new_avg_steps, layout=c(1,2), type='l')
+
+knit2html('PA1_template.Rmd')
